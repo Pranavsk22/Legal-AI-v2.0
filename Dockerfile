@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-# ── system libs ──────────────────────────────────────────────
+# Installing system packages
 RUN apt-get update && \
     apt-get install -y --no-install-recommends libgl1-mesa-glx libglib2.0-0 curl && \
     rm -rf /var/lib/apt/lists/*
@@ -30,4 +30,7 @@ ENV PATH="/home/user/.local/bin:$PATH"
 EXPOSE 7860 
 # ── start FastAPI on whatever port HF assigns ───────────────
 #CMD ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "7860"]
-CMD uvicorn backend.api.main:app --host 0.0.0.0 --port 7860 & sleep 3 && curl -I http://localhost:7860/ || tail -n 20 /app/backend/api/main.py
+
+HEALTHCHECK CMD curl --fail http://localhost:7860/ || exit 1
+
+CMD uvicorn backend.api.main:app --host 0.0.0.0 --port 7860 --lifespan on --log-level info
