@@ -28,4 +28,4 @@ USER user
 ENV PATH="/home/user/.local/bin:$PATH"
 
 # ── start FastAPI on whatever port HF assigns ───────────────
-CMD ["sh", "-c", "uvicorn backend.api.main:app --host 0.0.0.0 --port $PORT"]
+CMD ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "7860"]
