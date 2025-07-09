@@ -16,7 +16,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url=None,
     openapi_url="/openapi.json",
-    root_path="" 
+    root_path="/" 
 )
 
 # -------------------------------------------------------------------------
@@ -38,5 +38,14 @@ app.add_middleware(
 @app.get("/", tags=["health"])
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/healthz")
+def healthz():
+    return {"ok": True}
+
+@app.get("/ping")
+def ping():
+    return {"pong": True}
 
 app.include_router(router)
