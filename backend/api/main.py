@@ -7,8 +7,6 @@ import os
 
 load_dotenv()
 
-PROXY_PREFIX = "/proxy/7860"                    # ⬅️  **NEW**
-
 app = FastAPI(
     title="Comprehensive Legal AI",
     version="0.1.0",
@@ -18,7 +16,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url=None,
     openapi_url="/openapi.json",
-    root_path=PROXY_PREFIX                      # ⬅️  **KEY LINE**
+    root_path="" 
 )
 
 # -------------------------------------------------------------------------
