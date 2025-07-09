@@ -31,6 +31,6 @@ EXPOSE 7860
 # ── start FastAPI on whatever port HF assigns ───────────────
 #CMD ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "7860"]
 
-HEALTHCHECK CMD curl --fail http://localhost:7860/ || exit 1
+HEALTHCHECK CMD curl -fs http://localhost:7860/healthz || exit 1
 
 CMD uvicorn backend.api.main:app --host 0.0.0.0 --port 7860 --lifespan on --log-level info

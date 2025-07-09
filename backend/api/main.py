@@ -7,16 +7,17 @@ import os
 
 load_dotenv()
 
+# add near the top, after imports
+HF_PROXY_ROOT = os.getenv("HF_SPACE_PATH", "")           # e.g. "/proxy/7860"
+# …
 app = FastAPI(
-    title="Comprehensive Legal AI",
+    title="Comprehensive Legal AI",
     version="0.1.0",
-    description=(
-        "Upload legal docs, then ask questions with Groq‑powered summaries."
-    ),
+    description="Upload legal docs, then ask questions with Groq‑powered summaries.",
     docs_url="/docs",
     redoc_url=None,
     openapi_url="/openapi.json",
-    root_path="/" 
+    root_path=HF_PROXY_ROOT      # <── KEY CHANGE
 )
 
 # -------------------------------------------------------------------------
