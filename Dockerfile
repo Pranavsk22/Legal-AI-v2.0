@@ -29,4 +29,5 @@ ENV PATH="/home/user/.local/bin:$PATH"
 
 EXPOSE 7860 
 # ── start FastAPI on whatever port HF assigns ───────────────
-CMD ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "7860"]
+#CMD ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD uvicorn backend.api.main:app --host 0.0.0.0 --port 7860 & sleep 2 && curl -I http://localhost:7860/health
