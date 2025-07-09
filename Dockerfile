@@ -11,7 +11,7 @@ ENV HF_HOME=/tmp/huggingface \
     TRANSFORMERS_CACHE=/tmp/huggingface/transformers \
     SENTENCE_TRANSFORMERS_HOME=/tmp/huggingface/sentence-transformers
 RUN mkdir -p $HF_HOME/transformers $HF_HOME/sentence-transformers && \
-    chmod -R 777 $HF_HOME          # ensure the non‑root user can write
+    chmod -R 777 $HF_HOME          # ensure the non-root user can write
 
 # --- python deps ------------------------------------------------
 WORKDIR /tmp
@@ -31,5 +31,5 @@ COPY --chown=user . .
 EXPOSE 7860
 
 # --- start ------------------------------------------------------
-#   HF injects an env var $PORT (defaults to 7860).  Use it.
-CMD ["bash", "-c", "uvicorn backend.api.main:app --host 0.0.0.0 --port ${PORT}"]
+# ── start ------------------------------------------------------
+CMD ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "7860"]
