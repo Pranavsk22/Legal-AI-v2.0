@@ -27,5 +27,6 @@ COPY --chown=user . .
 USER user
 ENV PATH="/home/user/.local/bin:$PATH"
 
+EXPOSE 7860 
 # ── start FastAPI on whatever port HF assigns ───────────────
 CMD ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "7860"]
