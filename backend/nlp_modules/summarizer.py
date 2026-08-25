@@ -112,11 +112,9 @@ def answer_question(question: str, context: str) -> str:
         "use markdown headings/bullets and cite clause titles in brackets. "
         "Reply 'NOT FOUND' if context lacks the answer."
     )
-    # Truncate context to ~3KB as a safe guard-rail against HTTP 413 Payload Too Large
-    context_short = textwrap.shorten(context, width=3_000, placeholder=" …")
     user = (
         f"### Question:\n{question}\n\n"
-        f"### Context:\n{context_short}\n\n"
+        f"### Context:\n{context}\n\n"
         "### Respond:"
     )
     try:

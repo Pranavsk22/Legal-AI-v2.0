@@ -6,11 +6,12 @@ from typing import List
 # Keys starting with "NO_" are flagged if the pattern is ABSENT.
 # Other keys are flagged if the pattern is PRESENT.
 RULES: dict[str, re.Pattern] = {
-    "NO_TERMINATION":       re.compile(r"\bterminat(e|ion)\b", re.I),
-    "NO_GOV_LAW":           re.compile(r"\bgovern(ed|ing)\s+by\b", re.I),
-    "NO_NOTICE":            re.compile(r"\bnotice\s+period\b", re.I),
-    "NO_INDEMNITY":         re.compile(r"\bindemnif(y|ication)\b", re.I),
-    "NO_LIABILITY_LIMIT":   re.compile(r"\blimit(ation)?\s+of\s+liability\b", re.I),
+    "NO_TERMINATION":       re.compile(r"\b(terminat(e|ion)|vacat(e|ion))\b", re.I),
+    "NO_GOV_LAW":           re.compile(r"\b(govern(ed|ing)\s+by|laws?\s+of|jurisdiction)\b", re.I),
+    "NO_NOTICE":            re.compile(r"\bnotice\b", re.I),
+    "NO_INDEMNITY":         re.compile(r"\bindemn(if(y|ication)|ity)\b", re.I),
+    "NO_LIABILITY_LIMIT":   re.compile(r"\blimit(ation)?\s*(of|on)?\s*liability\b", re.I),
+    "NO_STAMP_PAPER":       re.compile(r"\b(stamp\s*(paper|duty)|non-judicial|e-stamp)\b", re.I),
     "AUTO_RENEWAL":         re.compile(r"\b(auto(matic)?\s*renew(al)?|automatically\s+renew(s)?)\b", re.I),
     "UNLIMITED_LIABILITY":   re.compile(r"\b(unlimited\s+liability|liable\s+for\s+indirect\s+damages|consequential\s+damages\s+without\s+limit)\b", re.I),
 }
