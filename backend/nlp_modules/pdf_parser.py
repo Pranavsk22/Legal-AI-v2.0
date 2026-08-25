@@ -2,6 +2,13 @@ import fitz  # PyMuPDF
 import cv2
 import pytesseract
 import numpy as np
+import os
+
+tess_dir = os.getenv("TESSERACT-OCR")
+if tess_dir:
+    pytesseract.pytesseract.tesseract_cmd = os.path.join(tess_dir, "tesseract.exe")
+elif os.path.exists(r"C:\Program Files\Tesseract-OCR\tesseract.exe"):
+    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 
 def extract_text_from_pdf(path: str) -> str:

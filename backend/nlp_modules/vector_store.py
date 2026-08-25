@@ -18,14 +18,22 @@ class VectorDB:
         D, I = self.index.search(np.array([query_emb]).astype("float32"), top_k * 2)
         vec_scores = 1 / (1 + D[0])             # distance → similarity
 
-        # 2) BM25 scores
-        bm25_scores = self.bm25.get_scores(query.split())
+        # 2) BM25 scores (Normalized to [0, 1] range)
+        bm25_raw = np.array(self.bm25.get_scores(query.split()))
+        max_b = np.max(bm25_raw) if len(bm25_raw) > 0 else 0.0
+        min_b = np.min(bm25_raw) if len(bm25_raw) > 0 else 0.0
+        
+        if max_b - min_b > 0:
+            bm25_scores = (bm25_raw - min_b) / (max_b - min_b)
+        else:
+            bm25_scores = np.zeros_like(bm25_raw)
 
         # 3) Combine scores
         combined = []
         for idx, vscore in zip(I[0], vec_scores):
-            score = (1 - w_bm25) * vscore + w_bm25 * bm25_scores[idx]
-            combined.append((idx, score))
+            if 0 <= idx < len(self.text_chunks):
+                score = (1 - w_bm25) * vscore + w_bm25 * bm25_scores[idx]
+                combined.append((idx, score))
 
         # 4) Return top‑k
         combined.sort(key=lambda x: x[1], reverse=True)
@@ -49,6 +57,7 @@ class VectorDB:
                 "meta": self.meta_chunks[i],
             }
             for i in I[0]
+            if 0 <= i < len(self.text_chunks)
         ]
 
     def save(self, path):

@@ -5,6 +5,8 @@ retrieve top‑K chunks, and produce a Groq‑powered summary.
 """
 import pickle
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from backend.nlp_modules.embedder import embed_chunks
 from backend.nlp_modules.vector_store import VectorDB
@@ -14,13 +16,14 @@ INDEX_PATH = Path("vector_db/contracts.faiss")
 META_PATH  = Path("vector_db/contracts_text.pkl")
 
 def load_db():
-    texts = pickle.loads(META_PATH.read_bytes())
-    return VectorDB.load(INDEX_PATH, dim=384, texts=texts)
+    blob = pickle.loads(META_PATH.read_bytes())
+    return VectorDB.load(INDEX_PATH, dim=384, texts=blob["texts"], metas=blob["metas"])
 
 def ask(query, top_k=5):
     vdb = load_db()
     q_emb = embed_chunks([query])[0]
-    chunks = vdb.search(q_emb, top_k=top_k)
+    results = vdb.search(q_emb, top_k=top_k)
+    chunks = [r["text"] for r in results]
     context = "\n".join(chunks)
     answer  = summarize_with_groq(context)
     return answer, chunks

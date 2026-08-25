@@ -1,8 +1,10 @@
 # backend/api/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from backend.api.routes import router
 from dotenv import load_dotenv
+import pathlib
 
 load_dotenv()
 
@@ -33,8 +35,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+def read_root():
+    html_path = pathlib.Path(__file__).parent / "index.html"
+    return html_path.read_text(encoding="utf-8")
+
 @app.get("/healthz", tags=["health"])
 def healthz() -> dict[str, str]:
     return {"status": "ok"}
 
 app.include_router(router)
+

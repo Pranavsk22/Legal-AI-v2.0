@@ -23,13 +23,14 @@ if __name__ == "__main__":
     embeddings = embed_chunks(chunks)
 
     db = VectorDB()
-    db.add(embeddings, chunks)
+    metas = [{"clause": "Unknown", "source": "demo"} for _ in chunks]
+    db.add(embeddings, chunks, metas)
 
     query = "Termination conditions of the contract?"
     query_emb = embed_chunks([query])[0]
 
     relevant_chunks = db.search(query_emb)
-    context = "\n".join(relevant_chunks)
+    context = "\n".join(r["text"] for r in relevant_chunks)
 
     summary = summarize_with_groq(context)
     print("\n📘 Summary of Retrieved Context:\n", summary)

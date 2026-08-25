@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal AI - Smart Contract Intelligence</title>
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --glass-bg: rgba(17, 25, 40, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #8b5cf6; /* Violet */
+            --accent-primary-hover: #a78bfa;
+            --accent-success: #10b981; /* Emerald */
+            --accent-warning: #f59e0b; /* Amber */
+            --accent-danger: #ef4444; /* Red */
+            --text-main: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --font-display: 'Outfit', sans-serif;
+            --font-sans: 'Inter', sans-serif;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Header / Navbar */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--glass-border);
+            background: rgba(11, 15, 25, 0.8);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #a78bfa 0%, #10b981 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-success);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 10px var(--accent-success);
+        }
+
+        .server-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.6; }
+            50% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 8px var(--accent-success); }
+            100% { transform: scale(0.9); opacity: 0.6; }
+        }
+
+        /* Main Layout */
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            flex-grow: 1;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Panels / Cards */
+        .panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            backdrop-filter: blur(16px);
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            height: fit-content;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 600;
+            border-left: 4px solid var(--accent-primary);
+            padding-left: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Drag & Drop Upload Zone */
+        .upload-zone {
+            border: 2px dashed rgba(139, 92, 246, 0.3);
+            border-radius: 12px;
+            padding: 3rem 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            background: rgba(139, 92, 246, 0.02);
+            position: relative;
+        }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--accent-primary);
+            background: rgba(139, 92, 246, 0.06);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.15);
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent-primary);
+        }
+
+        .upload-text {
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .upload-hint {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            display: none;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            height: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-success));
+            width: 0%;
+            height: 100%;
+            border-radius: 8px;
+            transition: width 0.4s ease;
+        }
+
+        /* Risk Analysis Display */
+        .risk-section {
+            display: none;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .risk-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.85rem 1.25rem;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 4px solid var(--glass-border);
+            font-size: 0.9rem;
+            transition: all var(--transition-speed);
+        }
+
+        .risk-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            transform: translateX(4px);
+        }
+
+        .risk-item.danger {
+            border-left-color: var(--accent-danger);
+            background: rgba(239, 68, 68, 0.03);
+        }
+
+        .risk-item.warning {
+            border-left-color: var(--accent-warning);
+            background: rgba(245, 158, 11, 0.03);
+        }
+
+        .risk-item.success {
+            border-left-color: var(--accent-success);
+            background: rgba(16, 185, 129, 0.03);
+        }
+
+        .risk-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 0.25rem 0.6rem;
+            border-radius: 20px;
+            letter-spacing: 0.05em;
+        }
+
+        .risk-badge.badge-danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--accent-danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .risk-badge.badge-warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--accent-warning);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .risk-badge.badge-success {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        /* Document Summary Viewport */
+        .summary-section {
+            display: none;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .summary-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--text-main);
+            max-height: 250px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        /* Q&A / Chat Panel */
+        .chat-panel {
+            max-height: 85vh;
+            height: 85vh;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .chat-history {
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            padding-right: 0.5rem;
+        }
+
+        .chat-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+            text-align: center;
+            gap: 1rem;
+        }
+
+        .chat-placeholder-icon {
+            font-size: 3rem;
+            color: rgba(255, 255, 255, 0.15);
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            max-width: 85%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            align-self: flex-end;
+        }
+
+        .message.bot {
+            align-self: flex-start;
+        }
+
+        .message-bubble {
+            padding: 0.9rem 1.2rem;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .message.user .message-bubble {
+            background: var(--accent-primary);
+            color: white;
+            border-bottom-right-radius: 2px;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+        }
+
+        .message.bot .message-bubble {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            border-bottom-left-radius: 2px;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            align-self: flex-end;
+        }
+
+        .message.bot .message-time {
+            align-self: flex-start;
+        }
+
+        /* Citations Panel */
+        .citations-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            padding-left: 0.5rem;
+            border-left: 2px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .citation-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 0.6rem 0.8rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .citation-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+            color: var(--accent-primary-hover);
+            margin-bottom: 0.25rem;
+        }
+
+        .citation-snippet {
+            font-style: italic;
+        }
+
+        /* Chat Input Zone */
+        .chat-input-area {
+            display: flex;
+            gap: 0.75rem;
+            border-top: 1px solid var(--glass-border);
+            padding-top: 1rem;
+        }
+
+        .chat-input {
+            flex-grow: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 0.85rem 1.25rem;
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            outline: none;
+            transition: all var(--transition-speed);
+        }
+
+        .chat-input:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.15);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-send-btn {
+            background: var(--accent-primary);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            padding: 0 1.5rem;
+            font-family: var(--font-sans);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-send-btn:hover {
+            background: var(--accent-primary-hover);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .chat-send-btn:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Dot Loading Indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 0.4rem 0.5rem;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--text-secondary);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--glass-border);
+            margin-top: auto;
+            background: rgba(11, 15, 25, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <span class="logo-dot"></span>
+            Legal AI
+        </div>
+        <div class="server-status" id="server-status-container">
+            <span class="status-dot"></span>
+            <span>API Online</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Left Side: Ingestion, Summary, and Risks -->
+        <div class="panel" id="ingest-panel">
+            <div class="panel-title">
+                Contract Ingestion & Analysis
+            </div>
+            
+            <!-- Upload Box -->
+            <div class="upload-zone" id="drop-zone">
+                <input type="file" id="file-input" class="file-input" accept=".pdf,.docx,.adoc,.txt,.html,.htm">
+                <div class="upload-icon">📥</div>
+                <div class="upload-text" id="upload-text">Drag & drop contract files here, or <span style="color: var(--accent-primary); font-weight: 500;">browse</span></div>
+                <div class="upload-hint">Supports PDF, Word (.docx), AsciiDoc, Raw Text (.txt), and HTML</div>
+            </div>
+
+            <!-- Upload Progress -->
+            <div class="progress-container" id="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+
+            <!-- Summary Box -->
+            <div class="summary-section" id="summary-section">
+                <div class="panel-title" style="font-size: 1.1rem; border-left-color: var(--accent-success);">
+                    AI-Generated Summary
+                </div>
+                <div class="summary-box" id="summary-box">Processing...</div>
+            </div>
+
+            <!-- Risk Rules Analysis -->
+            <div class="risk-section" id="risk-section">
+                <div class="panel-title" style="font-size: 1.1rem; border-left-color: var(--accent-warning);">
+                    Contract Risk Assessment
+                </div>
+                <div id="risk-list" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Interactive Dialogue -->
+        <div class="panel chat-panel">
+            <div class="panel-title">
+                Interactive Dialogue Q&A
+            </div>
+
+            <!-- Chat viewport -->
+            <div class="chat-history" id="chat-history">
+                <div class="chat-placeholder" id="chat-placeholder">
+                    <div class="chat-placeholder-icon">💬</div>
+                    <div>Upload a contract to start the interactive dialogue.</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); max-width: 80%;">Ask questions about termination rules, liability caps, notice periods, and more.</div>
+                </div>
+            </div>
+
+            <!-- Input area -->
+            <div class="chat-input-area">
+                <input type="text" class="chat-input" id="chat-input" placeholder="Ask a question about the uploaded contract..." disabled>
+                <button class="chat-send-btn" id="chat-send-btn" disabled>Send</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        Comprehensive Legal AI Platform • Built with FastAPI, Sentence Transformers, and Groq LLaMA-3.
+    </footer>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const uploadText = document.getElementById('upload-text');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+        
+        const summarySection = document.getElementById('summary-section');
+        const summaryBox = document.getElementById('summary-box');
+        
+        const riskSection = document.getElementById('risk-section');
+        const riskList = document.getElementById('risk-list');
+        
+        const chatHistory = document.getElementById('chat-history');
+        const chatPlaceholder = document.getElementById('chat-placeholder');
+        const chatInput = document.getElementById('chat-input');
+        const chatSendBtn = document.getElementById('chat-send-btn');
+
+        let activeFilename = null;
+
+        // Risk explanation dictionary
+        const RISK_INFO = {
+            "NO_TERMINATION": {
+                name: "Missing Termination Clause",
+                desc: "No termination language was detected. Contracts should clearly define how parties can exit the agreement.",
+                severity: "danger"
+            },
+            "NO_GOV_LAW": {
+                name: "Missing Governing Law",
+                desc: "No governing law or jurisdiction statement was found. This can lead to legal disputes over which legal system applies.",
+                severity: "danger"
+            },
+            "NO_NOTICE": {
+                name: "Missing Notice Period",
+                desc: "No notice period clauses were found, which might restrict exit strategies or create unexpected termination obligations.",
+                severity: "warning"
+            },
+            "NO_INDEMNITY": {
+                name: "Missing Indemnification",
+                desc: "Indemnification clauses are absent. A standard protection clause should defend against third-party claims.",
+                severity: "warning"
+            },
+            "NO_LIABILITY_LIMIT": {
+                name: "No Limitation of Liability",
+                desc: "No limitation of liability clause detected. This leaves parties open to potentially unlimited financial exposure.",
+                severity: "danger"
+            },
+            "AUTO_RENEWAL": {
+                name: "Auto-Renewal Provision Detected",
+                desc: "The contract contains auto-renewal clauses. Ensure renewal deadlines are tracked to avoid unintended extensions.",
+                severity: "warning"
+            },
+            "UNLIMITED_LIABILITY": {
+                name: "Unlimited Liability Clause Detected",
+                desc: "Direct language imposing unlimited liability or exposing to consequential damages was found.",
+                severity: "danger"
+            }
+        };
+
+        // File Drag and Drop events
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // Upload File Handler
+        function handleFile(file) {
+            uploadText.innerHTML = `Uploading: <strong>${file.name}</strong>`;
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '20%';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Construct API upload URL
+            // If hosted behind a proxy (like HF Space), prefix with proxy base or relative path
+            const baseRoute = window.location.pathname.replace(/\/+$/, '');
+            const uploadUrl = `${baseRoute}/upload`;
+
+            progressBar.style.width = '50%';
+
+            fetch(uploadUrl, {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`Upload failed: ${res.statusText}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                progressBar.style.width = '100%';
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                }, 1000);
+
+                activeFilename = data.filename;
+                displayAnalysis(data);
+                enableChat();
+            })
+            .catch(err => {
+                progressBar.style.width = '0%';
+                progressContainer.style.display = 'none';
+                uploadText.innerHTML = `<span style="color: var(--accent-danger)">Failed: ${err.message}</span>`;
+                console.error(err);
+            });
+        }
+
+        // Display summary and risks
+        function displayAnalysis(data) {
+            // Show summary
+            summarySection.style.display = 'flex';
+            summaryBox.textContent = data.summary;
+
+            // Show risks
+            riskSection.style.display = 'flex';
+            riskList.innerHTML = '';
+
+            const activeRisks = data.risks || [];
+
+            // Run through all defined risk rules
+            for (const key of Object.keys(RISK_INFO)) {
+                const info = RISK_INFO[key];
+                const isTriggered = activeRisks.includes(key);
+
+                const item = document.createElement('div');
+                item.className = 'risk-item';
+
+                if (isTriggered) {
+                    item.classList.add(info.severity);
+                    item.innerHTML = `
+                        <div>
+                            <div style="font-weight: 600; color: ${info.severity === 'danger' ? 'var(--accent-danger)' : 'var(--accent-warning)'}">${info.name}</div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">${info.desc}</div>
+                        </div>
+                        <span class="risk-badge badge-${info.severity}">Risk</span>
+                    `;
+                } else {
+                    // Only show NO_ clauses as "Passed" if they aren't triggered
+                    if (key.startsWith('NO_')) {
+                        const baseName = info.name.replace("Missing ", "");
+                        item.classList.add('success');
+                        item.innerHTML = `
+                            <div>
+                                <div style="font-weight: 600; color: var(--accent-success)">${baseName} Present</div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">Clause verification checks passed.</div>
+                            </div>
+                            <span class="risk-badge badge-success">OK</span>
+                        `;
+                    } else {
+                        // Skip presence clauses that didn't trigger
+                        continue;
+                    }
+                }
+                riskList.appendChild(item);
+            }
+        }
+
+        // Chat Integration
+        function enableChat() {
+            chatInput.disabled = false;
+            chatSendBtn.disabled = false;
+            chatPlaceholder.style.display = 'none';
+            
+            // Add system greeting
+            addMessage('bot', `I have successfully analyzed the document "${activeFilename}". Ask me any questions regarding its provisions, liabilities, notices, or terms.`);
+        }
+
+        function addMessage(sender, text, citations = []) {
+            const msg = document.createElement('div');
+            msg.className = `message ${sender}`;
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = text;
+            msg.appendChild(bubble);
+
+            if (citations && citations.length > 0) {
+                const citeContainer = document.createElement('div');
+                citeContainer.className = 'citations-container';
+                
+                citations.forEach(c => {
+                    const card = document.createElement('div');
+                    card.className = 'citation-card';
+                    card.innerHTML = `
+                        <div class="citation-header">
+                            <span>Clause: ${c.clause}</span>
+                            <span>Source: ${c.source}</span>
+                        </div>
+                        <div class="citation-snippet">${c.snippet}</div>
+                    `;
+                    citeContainer.appendChild(card);
+                });
+                msg.appendChild(citeContainer);
+            }
+
+            const time = document.createElement('span');
+            time.className = 'message-time';
+            const now = new Date();
+            time.textContent = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            msg.appendChild(time);
+
+            chatHistory.appendChild(msg);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function addTypingIndicator() {
+            const indicator = document.createElement('div');
+            indicator.className = 'message bot';
+            indicator.id = 'typing-indicator-bubble';
+            indicator.innerHTML = `
+                <div class="message-bubble" style="padding: 0.4rem 0.8rem;">
+                    <div class="typing-indicator">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            `;
+            chatHistory.appendChild(indicator);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const element = document.getElementById('typing-indicator-bubble');
+            if (element) {
+                element.remove();
+            }
+        }
+
+        function sendMessage() {
+            const query = chatInput.value.trim();
+            if (!query) return;
+
+            addMessage('user', query);
+            chatInput.value = '';
+            addTypingIndicator();
+
+            const baseRoute = window.location.pathname.replace(/\/+$/, '');
+            const askUrl = `${baseRoute}/ask`;
+
+            fetch(askUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    query: query,
+                    source: activeFilename
+                })
+            })
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`QA failed: ${res.statusText}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                removeTypingIndicator();
+                addMessage('bot', data.answer, data.citations);
+            })
+            .catch(err => {
+                removeTypingIndicator();
+                addMessage('bot', `Error processing query: ${err.message}`);
+                console.error(err);
+            });
+        }
+
+        chatSendBtn.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>

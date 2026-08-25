@@ -66,8 +66,8 @@ async def upload_contract(file: UploadFile = File(...)):
     global _db_cache
     _db_cache = db                               # hot‑reload cache
 
-    # 5) ── LLM summary of the whole doc (first ~20 chunks) ────
-    ctx_for_llm = "\n".join(chunks[:20])          # ~6k tokens raw
+    # 5) ── LLM summary of the whole doc (first ~2 chunks) ────
+    ctx_for_llm = "\n".join(chunks[:2])          # ~600 tokens raw
     summary = summarizer.summarize_with_groq(
         "Provide a concise, professional summary of this document.",
         ctx_for_llm,
@@ -104,7 +104,7 @@ async def ask_question(payload: AskRequest):
         if key not in seen:
             seen.add(key)
             top.append(r)
-        if len(top) == 12:
+        if len(top) == 6:
             break
 
     context = "\n".join(r["text"] for r in top)

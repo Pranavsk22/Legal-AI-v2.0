@@ -3,6 +3,7 @@ import pathlib
 from .pdf_parser import extract_text_from_pdf, extract_text_from_scanned_pdf
 from .docx_parser import extract_text_from_docx
 from .adoc_parser import extract_text_from_adoc
+from .html_parser import extract_text_from_html
 
 HEADING_RE = re.compile(r"^(?:section|clause|article)\s+([\dA-Za-z.\-()]+).*", re.I)
 
@@ -21,6 +22,13 @@ def extract_text(path: str) -> str:
     
     elif ext == ".adoc":
         return extract_text_from_adoc(path)
+        
+    elif ext == ".txt":
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            return f.read()
+            
+    elif ext in (".html", ".htm"):
+        return extract_text_from_html(path)
     
     else:
         raise ValueError(f"Unsupported file type: {ext}")
