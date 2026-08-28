@@ -15,9 +15,11 @@ Welcome to the **Comprehensive Legal AI Platform**! This is a state-of-the-art *
 
 It features:
 - **Universal Parser**: Extracts clean text from native PDFs, scanned PDFs (via OCR), Word documents (`.docx`), AsciiDoc (`.adoc`), raw text (`.txt`), and HTML files (`.html`/`.htm`).
+- **Structured Search & Schema Validation**: Validate metadata fields (parties, dates, governing law, types) using strict Pydantic schemas before indexing, with search filtering over weakness categories and metadata.
 - **Rule-based Risk Engine**: Instantly checks for common contract risks like auto-renewals, unlimited liability clauses, missing governing law, and missing liability limitations.
 - **AI-Powered Summarization**: Generates a professional legal summary of uploaded files using Groq-powered LLMs.
 - **Interactive Dialogue Q&A**: Lets you chat with the contract, returning exact citations (source file, clause heading, and matching snippet).
+- **Retrieval Evaluation**: Benchmarked search and QA grounding reports showing retrieval accuracy (Precision/Recall) and RAG accuracy vs. baseline LLM knowledge. (See [Retrieval Evaluation Report](reports/retrieval_eval.md)).
 - **Stunning UI Dashboard**: A sleek, glassmorphic dark-themed single-page dashboard for drag-and-drop ingestion and interaction.
 
 ---

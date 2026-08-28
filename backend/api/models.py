@@ -25,3 +25,26 @@ class Citation(BaseModel):
 class AskResponse(BaseModel):
     answer: str
     citations: List[Citation]
+
+
+class DocumentDraftResponse(BaseModel):
+    doc_id: str
+    doc_type: str
+    risk_flags: List[str]
+    parties: Optional[List[str]] = None
+    effective_date: Optional[str] = None
+    governing_law: Optional[str] = None
+    source_format: str
+    chunks: List[str]
+
+
+class DocumentConfirmRequest(BaseModel):
+    doc_id: str
+    doc_type: str
+    risk_flags: List[str]
+    parties: Optional[List[str]] = None
+    effective_date: Optional[str] = None
+    governing_law: Optional[str] = None
+    source_format: str
+    chunks: List[str]
+

@@ -66,7 +66,7 @@ def _chat(key: str, system: str, user: str, *, temperature: float = 0.3) -> str:
                 wait_time = 10.0 * (attempt + 1)
             
             # Print to stdout/stderr so developers and backend logs show rate limits
-            print(f"⚠️  [Rate Limit] Groq 429 received. Retrying in {wait_time:.2f}s (Attempt {attempt+1}/{max_retries})...")
+            print(f"[Rate Limit] Groq 429 received. Retrying in {wait_time:.2f}s (Attempt {attempt+1}/{max_retries})...")
             time.sleep(wait_time)
             continue
             
@@ -138,4 +138,47 @@ def summarize_with_groq(prompt_or_context: str, context: str = None) -> str:
         return summarize_document(prompt_or_context)
     else:
         return answer_question(prompt_or_context, context)
+
+
+def extract_metadata_with_groq(text: str) -> dict:
+    """Extract metadata (doc_type, parties, effective_date, governing_law) using Groq LLM."""
+    import json
+    try:
+        summary_key, _ = _get_keys()
+    except Exception:
+        # Fallback if keys are not set/configured
+        return {}
+
+    # Keep only the first 2500 characters for metadata extraction (usually front page has it)
+    snippet = text[:2500]
+    system = (
+        "You are a helpful legal assistant. Extract metadata from the contract text.\n"
+        "Respond ONLY with a JSON object containing keys: doc_type, parties, effective_date, governing_law.\n"
+        "parties must be a list of strings representing the names of the parties involved.\n"
+        "effective_date must be a string (e.g. YYYY-MM-DD or readable text) or null.\n"
+        "governing_law must be a string representing the jurisdiction or null.\n"
+        "doc_type must be the type of document (e.g. 'Lease Agreement', 'NDA', 'Service Agreement') or null.\n"
+        "DO NOT write any explanation, just the raw JSON."
+    )
+    user = f"Contract Snippet:\n{snippet}"
+    try:
+        response_text = _chat(summary_key, system, user, temperature=0.1)
+        # Try to find JSON block if the model wrapped it in markdown code block
+        if "```json" in response_text:
+            response_text = response_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in response_text:
+            response_text = response_text.split("```")[1].split("```")[0].strip()
+        
+        data = json.loads(response_text.strip())
+        return {
+            "doc_type": data.get("doc_type"),
+            "parties": data.get("parties"),
+            "effective_date": data.get("effective_date"),
+            "governing_law": data.get("governing_law")
+        }
+    except Exception as e:
+        # Log to console
+        print(f"⚠️ Groq metadata extraction failed or timed out: {str(e)}. Falling back to regex.")
+        return {}
+
 
