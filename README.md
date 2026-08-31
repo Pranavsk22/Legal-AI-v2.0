@@ -9,24 +9,27 @@ app_port: 7860
 pinned: false
 ---
 
-# ⚖️ Comprehensive Legal AI Platform
+# Comprehensive Legal AI Platform
 
 Welcome to the **Comprehensive Legal AI Platform**! This is a state-of-the-art **Retrieval-Augmented Generation (RAG)** application designed to analyze legal documents (such as contracts, agreements, statutes, and judgements).
 
-It features:
+## Core Capabilities
+
 - **Universal Parser**: Extracts clean text from native PDFs, scanned PDFs (via OCR), Word documents (`.docx`), AsciiDoc (`.adoc`), raw text (`.txt`), and HTML files (`.html`/`.htm`).
-- **Structured Search & Schema Validation**: Validate metadata fields (parties, dates, governing law, types) using strict Pydantic schemas before indexing, with search filtering over weakness categories and metadata.
-- **Rule-based Risk Engine**: Instantly checks for common contract risks like auto-renewals, unlimited liability clauses, missing governing law, and missing liability limitations.
+- **Structured Search & Schema Validation**: Validates metadata fields (parties, dates, governing law, types) using strict Pydantic schemas before indexing, with search filtering over weakness categories and metadata.
+- **Rule-Based Risk Engine**: Instantly checks for common contract risks like auto-renewals, unlimited liability clauses, missing governing law, and missing liability limitations.
 - **AI-Powered Summarization**: Generates a professional legal summary of uploaded files using Groq-powered LLMs.
 - **Interactive Dialogue Q&A**: Lets you chat with the contract, returning exact citations (source file, clause heading, and matching snippet).
+- **Claim-Evidence Taxonomy & Grounding Validation**: Implements a post-hoc verification pass checking cited clauses and word-overlap similarity to classify answers as `supported`, `partially supported`, `unsupported`, or `citation error` before returning.
+- **Ingestion Poisoning Detection**: Employs anomaly outlier detection on embedding distributions to flag injected or off-topic adversarial text at upload time.
 - **Retrieval Evaluation**: Benchmarked search and QA grounding reports showing retrieval accuracy (Precision/Recall) and RAG accuracy vs. baseline LLM knowledge. (See [Retrieval Evaluation Report](reports/retrieval_eval.md)).
-- **Stunning UI Dashboard**: A sleek, glassmorphic dark-themed single-page dashboard for drag-and-drop ingestion and interaction.
+- **Glassmorphic UI Dashboard**: A sleek, modern dark-themed single-page dashboard for drag-and-drop ingestion and interaction.
 
 ---
 
-## 🛠️ Step-by-Step Installation (For Beginners)
+## Step-by-Step Installation
 
-Follow these simple steps to set up and run the application on your computer:
+Follow these steps to set up and run the application on your computer:
 
 ### 1. Prerequisites
 Make sure you have python installed. You can check this by opening a terminal (Command Prompt, PowerShell, or bash) and typing:
@@ -43,7 +46,7 @@ cd Legal-AI-v2.0
 ```
 
 ### 3. Create a Virtual Environment
-A virtual environment keeps your project dependencies isolated from the rest of your computer.
+A virtual environment keeps your project dependencies isolated.
 
 - **On Windows (PowerShell)**:
   ```powershell
@@ -75,7 +78,7 @@ pip install -r requirements.txt
 
 ---
 
-## 🚀 Running the Platform
+## Running the Platform
 
 Once installed and configured, you can launch the platform:
 
@@ -94,11 +97,10 @@ Navigate to **[http://localhost:7860](http://localhost:7860)** to open the inter
 
 ---
 
-## 🧪 Testing the Project
+## Testing the Project
 
-To ensure everything is working correctly, we have set up a full suite of automated tests.
+To ensure everything is working correctly, run the full automated test suite:
 
-Run pytest in your terminal:
 ```bash
 # On Windows PowerShell
 $env:PYTHONPATH="." ; .venv\Scripts\pytest.exe
@@ -109,7 +111,7 @@ PYTHONPATH=. pytest
 
 ---
 
-## 📂 Project Architecture
+## Project Architecture
 
 ```
 Legal-AI-v2.0/
@@ -124,9 +126,9 @@ Legal-AI-v2.0/
 │       ├── pdf_parser.py          # Native PDF parsing & pytesseract OCR fallback
 │       ├── universal_parser.py    # Routing hub for document ingestion
 │       ├── embedder.py            # Sentence-Transformers MiniLM vector generator
-│       ├── vector_store.py        # FAISS Index + BM25 Hybrid Search scoring
+│       ├── vector_store.py        # FAISS Index + BM25 Hybrid Search scoring & poisoning check
 │       ├── risk_rules.py          # Regex contract risk detection logic
-│       └── summarizer.py          # Groq LLaMA-3 client integrations (lazy-loaded)
+│       └── summarizer.py          # Groq LLaMA-3 client integrations & citation verification
 ├── tests/                         # Pytest Suite (Unit & Integration tests)
 ├── scripts/                       # Offline CLI utilities (indexing & searching)
 ├── Dockerfile                     # Deployment blueprint

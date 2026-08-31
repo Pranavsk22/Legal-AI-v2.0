@@ -9,6 +9,7 @@ class UploadResponse(BaseModel):
     chunks_added: int
     risks: list[str] | None = None
     summary: str
+    poisoning_warnings: Optional[List[str]] = None
 
 
 class AskRequest(BaseModel):
@@ -25,6 +26,8 @@ class Citation(BaseModel):
 class AskResponse(BaseModel):
     answer: str
     citations: List[Citation]
+    validation_status: str  # supported / partially supported / unsupported / citation error
+    citation_validation_details: Optional[List[dict]] = None
 
 
 class DocumentDraftResponse(BaseModel):
@@ -36,6 +39,7 @@ class DocumentDraftResponse(BaseModel):
     governing_law: Optional[str] = None
     source_format: str
     chunks: List[str]
+    poisoning_warnings: Optional[List[str]] = None
 
 
 class DocumentConfirmRequest(BaseModel):

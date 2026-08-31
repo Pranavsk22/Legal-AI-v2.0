@@ -1,4 +1,4 @@
-﻿# ✅ Python bytecode and caches
+# ✅ Python bytecode and caches
 __pycache__/
 *.py[cod]
 *.so
@@ -45,7 +45,7 @@ frontend/build/
 frontend/dist/
 
 
-# ? Exclude tests and specific markdown documentation
-tests/
+# ? Exclude specific markdown documentation and docs folder
+docs/
 Master_Prompt.md
 tasks.md

@@ -182,3 +182,146 @@ def extract_metadata_with_groq(text: str) -> dict:
         return {}
 
 
+def verify_citations(answer: str, top_chunks: list[dict]) -> tuple[str, list[dict]]:
+    """
+    Perform a post-hoc verification check over the Q&A answer:
+    1. Extract all citations in bracket formats (e.g. [Clause Name] or 【Clause Name】).
+    2. Check if every cited clause exists in the retrieved top_chunks metadata.
+    3. Check lexical and semantic overlap between the cited sentences and the actual retrieved chunks.
+    4. Categorize validation status as: supported / partially supported / unsupported / citation error.
+    
+    Returns:
+        (validation_status, citation_validation_details)
+    """
+    import re
+    import numpy as np
+    from backend.nlp_modules.embedder import embed_chunks
+
+    STOPWORDS = {"the", "is", "at", "which", "on", "and", "a", "an", "of", "to", "in", "for", "with", "that", "this", "it", "by", "from", "as", "shall", "be", "are", "under", "our"}
+
+    # 1. Check if the answer is "NOT FOUND"
+    clean_ans = answer.strip().upper()
+    if "NOT FOUND" in clean_ans or clean_ans == "NOT FOUND":
+        return "supported", []
+
+    # 2. Extract citations from response
+    citations = re.findall(r'[\[【]([^\]】]+)[\]】]', answer)
+    
+    if not citations:
+        # No citations provided, but the LLM claims to have answered the question.
+        return "unsupported", []
+
+    # Map chunks by clause title for easy retrieval
+    chunks_map = {}
+    for chunk in top_chunks:
+        clause_name = chunk.get("meta", {}).get("clause", "")
+        if clause_name:
+            chunks_map[clause_name.strip().lower()] = chunk
+
+    # Split answer into sentences and merge trailing citation-only elements back
+    raw_sentences = re.split(r'(?<=[.!?])\s+', answer)
+    sentences = []
+    for s in raw_sentences:
+        s = s.strip()
+        if not s:
+            continue
+        if s.startswith(('[', '【')) and s.endswith((']', '】')) and sentences:
+            sentences[-1] = sentences[-1] + " " + s
+        else:
+            sentences.append(s)
+    
+    validation_details = []
+    has_mismatch = False
+    unsupported_count = 0
+    partially_supported_count = 0
+    supported_count = 0
+
+    for sentence in sentences:
+        # Find citations in this specific sentence
+        sentence_citations = re.findall(r'[\[【]([^\]】]+)[\]】]', sentence)
+        if not sentence_citations:
+            continue
+        
+        # Clean the sentence of the citation brackets for clean semantic/lexical check
+        clean_sentence = re.sub(r'[\[【][^\]】]+[\]】]', '', sentence).strip()
+        if not clean_sentence:
+            continue
+
+        for cited_clause in sentence_citations:
+            cited_clause_clean = cited_clause.strip()
+            cited_clause_key = cited_clause_clean.lower()
+            
+            # Match against retrieved chunks (case-insensitive, fallback to partial matching if necessary)
+            matched_chunk = None
+            if cited_clause_key in chunks_map:
+                matched_chunk = chunks_map[cited_clause_key]
+            else:
+                # Fallback: check if cited clause is a substring of any chunk's clause or vice versa
+                for k, chunk in chunks_map.items():
+                    if cited_clause_key in k or k in cited_clause_key:
+                        matched_chunk = chunk
+                        break
+            
+            if not matched_chunk:
+                # Citation doesn't exist in retrieved chunks!
+                has_mismatch = True
+                validation_details.append({
+                    "sentence": sentence,
+                    "cited_clause": cited_clause_clean,
+                    "status": "citation error",
+                    "lexical_overlap": 0.0,
+                    "semantic_similarity": 0.0,
+                    "reason": "Cited clause was not found in the retrieved context chunks."
+                })
+                continue
+            
+            chunk_text = matched_chunk.get("text", "")
+            
+            # Check Lexical Overlap
+            words1 = set(re.findall(r'\w+', clean_sentence.lower())) - STOPWORDS
+            words2 = set(re.findall(r'\w+', chunk_text.lower())) - STOPWORDS
+            lex_overlap = len(words1.intersection(words2)) / len(words1) if words1 else 1.0
+            
+            # Check Semantic Similarity (Cosine Similarity of embeddings)
+            try:
+                emb_sentence = embed_chunks([clean_sentence])[0]
+                emb_chunk = embed_chunks([chunk_text])[0]
+                sem_similarity = float(np.dot(emb_sentence, emb_chunk))
+            except Exception:
+                sem_similarity = 0.0
+
+            # Determine sentence support status
+            if sem_similarity >= 0.55 or lex_overlap >= 0.4:
+                status = "supported"
+                supported_count += 1
+            elif sem_similarity >= 0.4 or lex_overlap >= 0.2:
+                status = "partially supported"
+                partially_supported_count += 1
+            else:
+                status = "unsupported"
+                unsupported_count += 1
+
+            validation_details.append({
+                "sentence": sentence,
+                "cited_clause": cited_clause_clean,
+                "status": status,
+                "lexical_overlap": float(lex_overlap),
+                "semantic_similarity": float(sem_similarity)
+            })
+
+    # 3. Aggregate overall taxonomy label
+    if has_mismatch:
+        overall_status = "citation error"
+    elif unsupported_count > 0:
+        overall_status = "unsupported"
+    elif partially_supported_count > 0:
+        overall_status = "partially supported"
+    elif supported_count > 0:
+        overall_status = "supported"
+    else:
+        overall_status = "unsupported"
+
+    return overall_status, validation_details
+
+
+

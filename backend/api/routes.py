@@ -86,6 +86,19 @@ async def upload_contract(file: UploadFile = File(...)):
 
     # 4) ── add to / build index on disk ───────────────────────
     db = get_db() if INDEX_PATH.exists() else vector_store.VectorDB()
+    
+    # Run poisoning check
+    poisoning_warnings = db.detect_poisoning(embeddings)
+    import re
+    flagged_indices = []
+    for warn in poisoning_warnings:
+        m = re.search(r"Chunk (\d+)", warn)
+        if m:
+            flagged_indices.append(int(m.group(1)))
+            
+    for i in range(len(validated_metas)):
+        validated_metas[i]["potential_poisoning"] = (i in flagged_indices)
+
     db.add(embeddings, chunks, validated_metas)
     db.save(INDEX_PATH)
     pickle.dump({"texts": db.text_chunks, "metas": db.meta_chunks},
@@ -107,6 +120,7 @@ async def upload_contract(file: UploadFile = File(...)):
         "chunks_added": len(chunks),
         "risks":        risks,
         "summary":      summary,                  # ← NEW
+        "poisoning_warnings": poisoning_warnings,
     }
 
 @router.get("/search")
@@ -162,6 +176,11 @@ async def ingest_draft(file: UploadFile = File(...)):
         # Clean up temp file
         dest.unlink(missing_ok=True)
 
+    # Run poisoning check
+    embeddings = embedder.embed_chunks(chunks)
+    db = get_db() if INDEX_PATH.exists() else vector_store.VectorDB()
+    poisoning_warnings = db.detect_poisoning(embeddings)
+
     return {
         "doc_id": file.filename,
         "doc_type": doc_meta["doc_type"],
@@ -170,7 +189,8 @@ async def ingest_draft(file: UploadFile = File(...)):
         "effective_date": doc_meta["effective_date"],
         "governing_law": doc_meta["governing_law"],
         "source_format": source_format,
-        "chunks": chunks
+        "chunks": chunks,
+        "poisoning_warnings": poisoning_warnings
     }
 
 @router.post("/ingest/confirm")
@@ -203,6 +223,19 @@ async def ingest_confirm(payload: DocumentConfirmRequest):
 
     # 3) Write to vector store
     db = get_db() if INDEX_PATH.exists() else vector_store.VectorDB()
+    
+    # Run poisoning check
+    poisoning_warnings = db.detect_poisoning(embeddings)
+    import re
+    flagged_indices = []
+    for warn in poisoning_warnings:
+        m = re.search(r"Chunk (\d+)", warn)
+        if m:
+            flagged_indices.append(int(m.group(1)))
+            
+    for i in range(len(validated_metas)):
+        validated_metas[i]["potential_poisoning"] = (i in flagged_indices)
+
     db.add(embeddings, payload.chunks, validated_metas)
     db.save(INDEX_PATH)
     
@@ -245,6 +278,9 @@ async def ask_question(payload: AskRequest):
     context = "\n".join(r["text"] for r in top)
     answer = summarizer.summarize_with_groq(f"Answer the question clearly and cite relevant legal clauses. Question: {payload.query}", context)
 
+    # Verify citations and claims
+    validation_status, validation_details = summarizer.verify_citations(answer, top)
+
     citations = [
         {
             "clause":  r["meta"]["clause"][:80],
@@ -254,4 +290,9 @@ async def ask_question(payload: AskRequest):
         for r in top
     ]
 
-    return {"answer": answer, "citations": citations}
+    return {
+        "answer": answer,
+        "citations": citations,
+        "validation_status": validation_status,
+        "citation_validation_details": validation_details
+    }

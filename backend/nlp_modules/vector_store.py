@@ -73,7 +73,7 @@ class VectorDB:
                     pass
         return True
 
-    def hybrid_search(self, query: str, query_emb=None, top_k=8, w_bm25=0.4, risk_type=None, doc_type=None, governing_law=None, date_from=None, date_to=None):
+    def hybrid_search(self, query: str, query_emb=None, top_k=8, w_bm25=0.1, risk_type=None, doc_type=None, governing_law=None, date_from=None, date_to=None):
         has_filters = any([risk_type, doc_type, governing_law, date_from, date_to])
         valid_indices = []
         if has_filters:
@@ -190,4 +190,54 @@ class VectorDB:
             return
         tokenized = [t.lower().split() for t in self.text_chunks]
         self.bm25 = BM25Okapi(tokenized)
+
+    def detect_poisoning(self, embeddings: list, document_id: str = None) -> list[str]:
+        """
+        Check for poisoning / out-of-distribution chunks in the uploaded document.
+        Detects if any chunk is an outlier relative to the document itself, or relative to
+        the global distribution in the vector database.
+        Returns a list of warning strings for flagged chunks.
+        """
+        warnings = []
+        if len(embeddings) < 3:
+            return warnings
+
+        # Calculate similarity of each chunk to the document average
+        embs_arr = np.array(embeddings).astype("float32")
+        mean_emb = np.mean(embs_arr, axis=0)
+        mean_emb_norm = np.linalg.norm(mean_emb)
+        if mean_emb_norm > 0:
+            mean_emb = mean_emb / mean_emb_norm
+
+        similarities = [float(np.dot(emb, mean_emb)) for emb in embs_arr]
+        mean_sim = np.mean(similarities)
+        std_sim = np.std(similarities)
+
+        # Flag chunks that are too far from the average document topic
+        # e.g., prompt injection or adversarial text injected into a contract
+        for idx, sim in enumerate(similarities):
+            # A chunk is an outlier if similarity to document mean is < 0.45 
+            # or if it's more than 2.5 standard deviations below the mean
+            is_outlier = sim < 0.45
+            if std_sim > 0.01 and sim < (mean_sim - 2.5 * std_sim):
+                is_outlier = True
+
+            if is_outlier:
+                warnings.append(
+                    f"Chunk {idx} is anomalously dissimilar to the rest of the document (similarity: {sim:.3f})."
+                )
+
+        # Optional: check against existing database distribution if DB has vectors
+        if self.index and self.index.ntotal > 0:
+            # Check if any chunk's distance to nearest neighbor is extremely high (similarity very low)
+            D, I = self.index.search(embs_arr, 1)
+            for idx, dist in enumerate(D[:, 0]):
+                sim = 1 / (1 + dist)
+                # If nearest neighbor similarity is < 0.35, it's globally anomalous
+                if sim < 0.35:
+                    msg = f"Chunk {idx} is anomalously dissimilar to existing database contents (similarity: {sim:.3f})."
+                    if msg not in warnings:
+                        warnings.append(msg)
+
+        return warnings
 
