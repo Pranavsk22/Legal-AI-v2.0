@@ -31,57 +31,87 @@ def _get_keys():
     return summary_key, qa_key
 
 GROQ_URL  = "https://api.groq.com/openai/v1/chat/completions"
-MODEL_ID  = os.getenv("GROQ_MODEL_ID", "llama-3.3-70b-versatile") # default active model ID from environment
+MODEL_ID = os.getenv("GROQ_MODEL_ID", "openai/gpt-oss-120b")
 TIMEOUT_S = 30
 
+CANDIDATE_MODELS = [
+    "openai/gpt-oss-120b",
+    "qwen/qwen3.8-27b",
+    "openai/gpt-oss-20b",
+    "allam-2-7b",
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+]
 
 # --------------------------------------------------------------------- #
 #  🛠️  Low‑level helper
 # --------------------------------------------------------------------- #
 def _chat(key: str, system: str, user: str, *, temperature: float = 0.3) -> str:
-    """Fire a Groq chat completion and return the assistant content."""
+    """Fire a Groq chat completion with automatic model fallback and retry."""
     import time
+
+    # Build prioritized candidate list with active env var first
+    models_to_try = []
+    preferred = os.getenv("GROQ_MODEL_ID")
+    if preferred:
+        models_to_try.append(preferred)
+    for m in CANDIDATE_MODELS:
+        if m not in models_to_try:
+            models_to_try.append(m)
+
     headers = {
         "Authorization": f"Bearer {key}",
         "Content-Type": "application/json",
     }
-    body = {
-        "model": os.getenv("GROQ_MODEL_ID", MODEL_ID),
-        "temperature": temperature,
-        "messages": [
-            {"role": "system", "content": system},
-            {"role": "user",   "content": user},
-        ],
-    }
 
-    max_retries = 4
-    for attempt in range(max_retries):
-        resp = requests.post(GROQ_URL, json=body, headers=headers, timeout=TIMEOUT_S)
-        
-        if resp.status_code == 429:
-            retry_after = resp.headers.get("retry-after") or resp.headers.get("Retry-After")
+    last_error = None
+    for model_name in models_to_try:
+        body = {
+            "model": model_name,
+            "temperature": temperature,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user",   "content": user},
+            ],
+        }
+
+        max_retries = 3
+        for attempt in range(max_retries):
             try:
-                wait_time = float(retry_after) if retry_after else 10.0 * (attempt + 1)
-            except ValueError:
-                wait_time = 10.0 * (attempt + 1)
-            
-            # Print to stdout/stderr so developers and backend logs show rate limits
-            print(f"[Rate Limit] Groq 429 received. Retrying in {wait_time:.2f}s (Attempt {attempt+1}/{max_retries})...")
-            time.sleep(wait_time)
-            continue
-            
-        try:
-            resp.raise_for_status()
-        except requests.HTTPError as e:
+                resp = requests.post(GROQ_URL, json=body, headers=headers, timeout=TIMEOUT_S)
+            except Exception as e:
+                last_error = e
+                break
+
+            if resp.status_code == 429:
+                retry_after = resp.headers.get("retry-after") or resp.headers.get("Retry-After")
+                try:
+                    wait_time = float(retry_after) if retry_after else 5.0 * (attempt + 1)
+                except ValueError:
+                    wait_time = 5.0 * (attempt + 1)
+                time.sleep(wait_time)
+                continue
+
+            if resp.status_code == 404 or "does not exist" in resp.text:
+                # Model not available on this API key, try next candidate
+                last_error = RuntimeError(resp.text)
+                break
+
             try:
-                err_json = resp.json()
-                err_msg = err_json.get("error", {}).get("message", resp.text)
-            except Exception:
-                err_msg = resp.text
-            raise RuntimeError(f"Groq API Error: {err_msg}") from e
-        return resp.json()["choices"][0]["message"]["content"].strip()
-        
-    raise RuntimeError("🚨 Groq API Error: Maximum retries exceeded due to rate limiting (429).")
+                resp.raise_for_status()
+                # Remember this working model for future calls
+                os.environ["GROQ_MODEL_ID"] = model_name
+                return resp.json()["choices"][0]["message"]["content"].strip()
+            except requests.HTTPError as e:
+                try:
+                    err_json = resp.json()
+                    err_msg = err_json.get("error", {}).get("message", resp.text)
+                except Exception:
+                    err_msg = resp.text
+                last_error = RuntimeError(f"Groq API Error: {err_msg}")
+                break
+
+    raise RuntimeError(f"🚨 All Groq model candidates failed. Last error: {str(last_error)}")
 
 
 # --------------------------------------------------------------------- #
