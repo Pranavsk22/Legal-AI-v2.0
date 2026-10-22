@@ -189,17 +189,31 @@ def analyze_document(file_obj, api_key_input: Optional[str] = None):
 
 
 @spaces.GPU
-def chat_query(query: str, history: List[Tuple[str, str]], api_key_input: Optional[str] = None):
+def chat_query(query: str, history=None, api_key_input: Optional[str] = None):
     """
     Answers questions using hybrid retrieval (FAISS + BM25) and Groq LLM synthesis,
-    with claim-evidence citation verification.
+    with claim-evidence citation verification. Compatible with Gradio messages format.
     """
-    if not query.strip():
+    if history is None:
+        history = []
+    
+    # Normalize history to messages format
+    formatted_history = []
+    for item in history:
+        if isinstance(item, dict):
+            formatted_history.append(item)
+        elif isinstance(item, (list, tuple)) and len(item) == 2:
+            formatted_history.append({"role": "user", "content": str(item[0])})
+            formatted_history.append({"role": "assistant", "content": str(item[1])})
+    history = formatted_history
+
+    if not query or not query.strip():
         return history, "Please enter a valid legal question.", ""
 
     if len(DB_INSTANCE.text_chunks) == 0:
-        bot_response = "⚠️ No contracts indexed yet. Please upload and analyze a contract in the 'Document Ingestion' tab first."
-        history.append((query, bot_response))
+        bot_response = "⚠️ No contracts indexed yet. Please upload and analyze a contract in the 'Document Analysis & Risk Engine' tab first."
+        history.append({"role": "user", "content": query})
+        history.append({"role": "assistant", "content": bot_response})
         return history, "No documents indexed.", ""
 
     # Allow setting Groq API key via UI if not present in environment
@@ -226,7 +240,8 @@ def chat_query(query: str, history: List[Tuple[str, str]], api_key_input: Option
 
         if not top:
             bot_response = "I couldn't locate any relevant clauses in the loaded document(s) matching your inquiry."
-            history.append((query, bot_response))
+            history.append({"role": "user", "content": query})
+            history.append({"role": "assistant", "content": bot_response})
             return history, "No matching clauses found.", ""
 
         context = "\n\n".join(r["text"] for r in top)
@@ -249,12 +264,14 @@ def chat_query(query: str, history: List[Tuple[str, str]], api_key_input: Option
             snippet = r["text"][:220].replace("\n", " ") + "..."
             citations_md += f"**[{i}] {clause_name}** (*{source}*)\n> {snippet}\n\n"
 
-        history.append((query, answer))
+        history.append({"role": "user", "content": query})
+        history.append({"role": "assistant", "content": answer})
         return history, status_badge, citations_md
 
     except Exception as e:
         bot_response = f"⚠️ Query error: {str(e)}. (Ensure GROQ API keys are configured in Space Settings or in the Key Configuration panel)."
-        history.append((query, bot_response))
+        history.append({"role": "user", "content": query})
+        history.append({"role": "assistant", "content": bot_response})
         return history, "Error occurred", ""
 
 
