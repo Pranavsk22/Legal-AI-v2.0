@@ -3,9 +3,8 @@ title: Comprehensive Legal AI
 emoji: ⚖️
 colorFrom: indigo
 colorTo: indigo
-sdk: docker
-sdk_version: "1.0"
-app_port: 7860
+sdk: gradio
+app_file: app.py
 pinned: false
 ---
 
