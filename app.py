@@ -288,8 +288,16 @@ def chat_query(query: str, history=None, api_key_input: Optional[str] = None):
         val_status, val_details = summarizer.verify_citations(answer, top)
 
         status_badge = f"**Grounding Verification**: `{val_status.upper()}`"
-        if val_details.get("avg_overlap"):
-            status_badge += f" | Grounding Overlap: `{val_details['avg_overlap']:.1%}`"
+        avg_overlap = 0.0
+        if isinstance(val_details, list) and val_details:
+            overlaps = [d.get("lexical_overlap", 0.0) for d in val_details if isinstance(d, dict)]
+            if overlaps:
+                avg_overlap = sum(overlaps) / len(overlaps)
+        elif isinstance(val_details, dict):
+            avg_overlap = val_details.get("avg_overlap", 0.0)
+
+        if avg_overlap > 0:
+            status_badge += f" | Grounding Overlap: `{avg_overlap:.1%}`"
 
         # Format Citations Block
         citations_md = "### 📑 Cited Source Clauses\n"
