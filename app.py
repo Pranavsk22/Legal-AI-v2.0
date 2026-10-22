@@ -13,10 +13,21 @@ from backend.nlp_modules import (
 )
 from backend.nlp_modules.schema import DocumentRecord
 
+try:
+    import spaces
+except ImportError:
+    class spaces:
+        @staticmethod
+        def GPU(func=None, **kwargs):
+            if func is not None:
+                return func
+            return lambda f: f
+
 # Global or session-based VectorDB instance
 DB_INSTANCE = vector_store.VectorDB(dim=384)
 PROCESSED_DOCS = set()
 
+@spaces.GPU
 def analyze_document(file_obj, api_key_input: Optional[str] = None):
     """
     Parses the uploaded legal document, extracts metadata,
@@ -177,6 +188,7 @@ def analyze_document(file_obj, api_key_input: Optional[str] = None):
         )
 
 
+@spaces.GPU
 def chat_query(query: str, history: List[Tuple[str, str]], api_key_input: Optional[str] = None):
     """
     Answers questions using hybrid retrieval (FAISS + BM25) and Groq LLM synthesis,
@@ -252,7 +264,7 @@ CUSTOM_CSS = """
 .card { border-radius: 10px; padding: 15px; margin-bottom: 15px; }
 """
 
-with gr.Blocks(title="Comprehensive Legal AI Platform", theme=gr.themes.Soft(primary_hue="indigo"), css=CUSTOM_CSS) as demo:
+with gr.Blocks(title="Comprehensive Legal AI Platform", css=CUSTOM_CSS) as demo:
     gr.Markdown(
         """
         # ⚖️ Comprehensive Legal AI Platform
@@ -334,4 +346,4 @@ with gr.Blocks(title="Comprehensive Legal AI Platform", theme=gr.themes.Soft(pri
             )
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(theme=gr.themes.Soft(primary_hue="indigo"))
