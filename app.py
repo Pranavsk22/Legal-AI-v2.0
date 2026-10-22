@@ -23,9 +23,40 @@ from backend.nlp_modules import (
 )
 from backend.nlp_modules.schema import DocumentRecord
 
-# Global or session-based VectorDB instance
+import pickle
+
+INDEX_DIR = Path("/tmp/legal_ai_vector_cache")
+INDEX_DIR.mkdir(parents=True, exist_ok=True)
+FAISS_PATH = str(INDEX_DIR / "contracts.faiss")
+META_PATH = str(INDEX_DIR / "contracts_meta.pkl")
+
+# In-memory and persistent VectorDB manager
 DB_INSTANCE = vector_store.VectorDB(dim=384)
 PROCESSED_DOCS = set()
+
+def get_or_load_db() -> vector_store.VectorDB:
+    global DB_INSTANCE
+    if os.path.exists(FAISS_PATH) and os.path.exists(META_PATH):
+        try:
+            with open(META_PATH, "rb") as f:
+                blob = pickle.load(f)
+            DB_INSTANCE = vector_store.VectorDB.load(
+                FAISS_PATH,
+                dim=384,
+                texts=blob.get("texts", []),
+                metas=blob.get("metas", []),
+            )
+        except Exception as e:
+            print(f"Error loading vector store from disk: {e}")
+    return DB_INSTANCE
+
+def save_db(db: vector_store.VectorDB):
+    try:
+        db.save(FAISS_PATH)
+        with open(META_PATH, "wb") as f:
+            pickle.dump({"texts": db.text_chunks, "metas": db.meta_chunks}, f)
+    except Exception as e:
+        print(f"Error saving vector store to disk: {e}")
 
 @spaces.GPU
 def analyze_document(file_obj, api_key_input: Optional[str] = None):
@@ -116,7 +147,8 @@ def analyze_document(file_obj, api_key_input: Optional[str] = None):
         embeddings = embedder.embed_chunks(chunks)
 
         # 7. Ingestion Poisoning Outlier Detection
-        poisoning_warnings = DB_INSTANCE.detect_poisoning(embeddings)
+        db = get_or_load_db()
+        poisoning_warnings = db.detect_poisoning(embeddings)
         flagged_indices = []
         for warn in poisoning_warnings:
             m = re.search(r"Chunk (\d+)", warn)
@@ -126,8 +158,9 @@ def analyze_document(file_obj, api_key_input: Optional[str] = None):
         for i in range(len(validated_metas)):
             validated_metas[i]["potential_poisoning"] = (i in flagged_indices)
 
-        # 8. Add to In-Memory Vector Store
-        DB_INSTANCE.add(embeddings, chunks, validated_metas)
+        # 8. Add to Vector Store & Persist to Disk
+        db.add(embeddings, chunks, validated_metas)
+        save_db(db)
         PROCESSED_DOCS.add(filename)
 
         # 9. Generate Executive Summary
@@ -210,7 +243,9 @@ def chat_query(query: str, history=None, api_key_input: Optional[str] = None):
     if not query or not query.strip():
         return history, "Please enter a valid legal question.", ""
 
-    if len(DB_INSTANCE.text_chunks) == 0:
+    db = get_or_load_db()
+
+    if len(db.text_chunks) == 0:
         bot_response = "⚠️ No contracts indexed yet. Please upload and analyze a contract in the 'Document Analysis & Risk Engine' tab first."
         history.append({"role": "user", "content": query})
         history.append({"role": "assistant", "content": bot_response})
@@ -223,10 +258,10 @@ def chat_query(query: str, history=None, api_key_input: Optional[str] = None):
 
     try:
         q_emb = embedder.embed_chunks([query])[0]
-        if hasattr(DB_INSTANCE, "hybrid_search"):
-            raw = DB_INSTANCE.hybrid_search(query, q_emb, top_k=15)
+        if hasattr(db, "hybrid_search"):
+            raw = db.hybrid_search(query, q_emb, top_k=15)
         else:
-            raw = DB_INSTANCE.search(q_emb, top_k=15)
+            raw = db.search(q_emb, top_k=15)
 
         # De-duplicate top chunks
         seen, top = set(), []
