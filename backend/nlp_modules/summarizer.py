@@ -31,7 +31,7 @@ def _get_keys():
     return summary_key, qa_key
 
 GROQ_URL  = "https://api.groq.com/openai/v1/chat/completions"
-MODEL_ID  = os.getenv("GROQ_MODEL_ID", "groq/compound-mini") # active model ID from environment
+MODEL_ID  = os.getenv("GROQ_MODEL_ID", "llama-3.3-70b-versatile") # default active model ID from environment
 TIMEOUT_S = 30
 
 
@@ -46,7 +46,7 @@ def _chat(key: str, system: str, user: str, *, temperature: float = 0.3) -> str:
         "Content-Type": "application/json",
     }
     body = {
-        "model": MODEL_ID,
+        "model": os.getenv("GROQ_MODEL_ID", MODEL_ID),
         "temperature": temperature,
         "messages": [
             {"role": "system", "content": system},
