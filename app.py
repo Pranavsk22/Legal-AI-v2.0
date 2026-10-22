@@ -1,3 +1,13 @@
+try:
+    import spaces
+except ImportError:
+    class spaces:
+        @staticmethod
+        def GPU(func=None, **kwargs):
+            if func is not None:
+                return func
+            return lambda f: f
+
 import os
 import re
 from pathlib import Path
@@ -12,16 +22,6 @@ from backend.nlp_modules import (
     risk_rules,
 )
 from backend.nlp_modules.schema import DocumentRecord
-
-try:
-    import spaces
-except ImportError:
-    class spaces:
-        @staticmethod
-        def GPU(func=None, **kwargs):
-            if func is not None:
-                return func
-            return lambda f: f
 
 # Global or session-based VectorDB instance
 DB_INSTANCE = vector_store.VectorDB(dim=384)
