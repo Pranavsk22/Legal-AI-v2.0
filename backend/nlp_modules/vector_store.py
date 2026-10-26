@@ -115,13 +115,26 @@ class VectorDB:
         else:
             bm25_scores = np.zeros_like(bm25_raw)
 
-        # 3) Combine scores
+        # 3) Determine candidate pool & combine scores
+        if has_filters:
+            target_indices = valid_indices
+        elif w_bm25 == 0.0:
+            target_indices = list(I[0])
+        elif w_bm25 == 1.0:
+            target_indices = list(np.argsort(bm25_raw)[-k:][::-1]) if len(bm25_raw) > 0 else []
+        else:
+            # Hybrid: pool candidates from both dense (FAISS) and sparse (BM25)
+            dense_top = list(I[0])
+            sparse_top = list(np.argsort(bm25_raw)[-k:][::-1]) if len(bm25_raw) > 0 else []
+            # Preserve order while taking the unique union
+            target_indices = list(dict.fromkeys(dense_top + sparse_top))
+
         combined = []
-        target_indices = valid_indices if has_filters else I[0]
         for idx in target_indices:
             if 0 <= idx < len(self.text_chunks):
                 vscore = vec_score_map.get(idx, 0.0)
-                score = (1 - w_bm25) * vscore + w_bm25 * bm25_scores[idx]
+                bscore = bm25_scores[idx] if idx < len(bm25_scores) else 0.0
+                score = (1 - w_bm25) * vscore + w_bm25 * bscore
                 combined.append((idx, score))
 
         # 4) Return top‑k

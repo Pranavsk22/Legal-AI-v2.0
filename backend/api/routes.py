@@ -35,13 +35,22 @@ def get_db():
 
 
 
+MAX_UPLOAD_SIZE_BYTES = 15 * 1024 * 1024  # 15 MB limit
+
 @router.post("/upload", response_model=UploadResponse)
 async def upload_contract(file: UploadFile = File(...)):
-    # 1) ── save temp file ──────────────────────────────────────
+    # 1) ── validate file size and save temp file ───────────────
+    content = await file.read()
+    if len(content) > MAX_UPLOAD_SIZE_BYTES:
+        await file.close()
+        raise HTTPException(
+            status_code=413,
+            detail=f"File size exceeds maximum allowed limit of {MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)}MB."
+        )
     dest = DATA_DIR / file.filename
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     with dest.open("wb") as fh:
-        fh.write(await file.read())
+        fh.write(content)
     await file.close()
 
     # 2) ── extract raw text & run risk engine ─────────────────
@@ -155,11 +164,18 @@ async def search_contracts(
 
 @router.post("/ingest/draft", response_model=DocumentDraftResponse)
 async def ingest_draft(file: UploadFile = File(...)):
-    # 1) save temp file
+    # 1) validate size & save temp file
+    content = await file.read()
+    if len(content) > MAX_UPLOAD_SIZE_BYTES:
+        await file.close()
+        raise HTTPException(
+            status_code=413,
+            detail=f"File size exceeds maximum allowed limit of {MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)}MB."
+        )
     dest = DATA_DIR / file.filename
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     with dest.open("wb") as fh:
-        fh.write(await file.read())
+        fh.write(content)
     await file.close()
 
     try:

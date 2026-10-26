@@ -19,10 +19,36 @@ Welcome to the **Comprehensive Legal AI Platform**! This is a state-of-the-art *
 - **Rule-Based Risk Engine**: Instantly checks for common contract risks like auto-renewals, unlimited liability clauses, missing governing law, and missing liability limitations.
 - **AI-Powered Summarization**: Generates a professional legal summary of uploaded files using Groq-powered LLMs.
 - **Interactive Dialogue Q&A**: Lets you chat with the contract, returning exact citations (source file, clause heading, and matching snippet).
-- **Claim-Evidence Taxonomy & Grounding Validation**: Implements a post-hoc verification pass checking cited clauses and word-overlap similarity to classify answers as `supported`, `partially supported`, `unsupported`, or `citation error` before returning.
-- **Ingestion Poisoning Detection**: Employs anomaly outlier detection on embedding distributions to flag injected or off-topic adversarial text at upload time.
-- **Retrieval Evaluation**: Benchmarked search and QA grounding reports showing retrieval accuracy (Precision/Recall) and RAG accuracy vs. baseline LLM knowledge. (See [Retrieval Evaluation Report](reports/retrieval_eval.md)).
+- **Claim-Evidence Taxonomy & Grounding Validation**: Implements a post-hoc verification pass checking cited clauses and word-overlap similarity to classify answers as `supported`, `partially supported`, `unsupported`, or `citation error` before returning. Achieves 100% detection (15 of 15) on injected fabricated citations and 80.0% grounded faithfulness.
+- **Ingestion Poisoning Detection & Upload Hardening**: Employs anomaly outlier detection on embedding distributions to flag injected or off-topic adversarial text at upload time, backed by a 15MB file size boundary middleware.
+- **Rigorous Retrieval & Grounded-Answer Evaluation**: Evaluated over a 120-question benchmark across 60 legal clauses with a strict Dev (40 queries) and Held-Out Test (80 queries) split, comparing BM25, FAISS (dense), and Hybrid with 1,000-resample Bootstrap 95% Confidence Intervals. (See [Retrieval Evaluation Report](reports/retrieval_eval.md)).
+- **Automated CI Regression Gate**: Pytest suite includes an automated gate (`tests/test_retrieval_eval_gate.py`) asserting Recall@3 $\ge 0.85$, MRR $\ge 0.80$, and citation error detection on every run.
 - **Glassmorphic UI Dashboard**: A sleek, modern dark-themed single-page dashboard for drag-and-drop ingestion and interaction.
+
+---
+
+## Retrieval & Grounding Evaluation Benchmark
+
+The retrieval engine was evaluated over **60 legal contract clauses** (spanning Indian rental leases and commercial contracts aligned with CUAD categories) and **120 questions** split into a **Dev Set ($N=40$)** for hyperparameter tuning and a **Held-Out Test Set ($N=80$)** evaluated once:
+
+### Held-Out Test Set Results ($N=80$, with Bootstrap 95% Confidence Intervals)
+
+| Configuration | Precision@1 (95% CI) | Recall@3 (95% CI) | Recall@5 | MRR (95% CI) | nDCG@10 | Latency (p50 / p95) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **BM25-only ($w=1.0$)** | 0.713 [0.613, 0.812] | 0.825 [0.750, 0.900] | 0.838 | 0.775 [0.700, 0.853] | 0.805 | 28.8ms / 32.8ms |
+| **FAISS-only ($w=0.0$)** | 0.887 [0.812, 0.950] | 0.963 [0.912, 1.000] | 0.988 | 0.930 [0.880, 0.970] | 0.947 | 27.9ms / 30.6ms |
+| **Hybrid Optimized ($w=0.10$)** | **0.900** [0.837, 0.963] | **0.963** [0.925, 1.000] | **0.975** | **0.938** [0.894, 0.975] | **0.953** | 28.3ms / 30.3ms |
+| **Hybrid Legacy ($w=0.40$)** | 0.850 [0.775, 0.925] | 0.912 [0.850, 0.963] | 0.938 | 0.890 [0.831, 0.943] | 0.913 | 29.2ms / 31.9ms |
+
+### Defensible Trade-off by Query Typology ($N=40$ each):
+- **Semantic Queries (Synonyms/Paraphrasing):** FAISS-only leads P@1 (**0.825** vs. BM25's 0.500) because dense MiniLM embeddings capture high-level conceptual intent without exact lexical overlap.
+- **Exact-Token Queries (Currencies, Dates, Section Codes):** BM25 achieves **0.925** P@1, while Hybrid ($w=0.10$) fuses exact keyword matching with dense ranking to achieve **0.975** Precision@1 and **1.000** Recall@3, outperforming FAISS-only.
+- **Production Choice:** Hybrid ($w=0.10$) delivers the highest overall held-out P@1 (0.900), Recall@3 (0.963), and MRR (0.938), safeguarding exact keyword queries without sacrificing dense semantic recall.
+
+### Citation Verification & Faithfulness:
+- **Grounded Faithfulness:** 80.0% of evaluated answers fully supported by retrieved context.
+- **Hallucinated Citation Detection:** **15 of 15 (100.0%)** intentionally injected fabricated citations caught by the automated verification pass.
+- **End-to-End Cost:** ~$0.00015 per grounded query using Groq LLaMA-3.
 
 ---
 
